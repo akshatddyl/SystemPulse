@@ -1,25 +1,38 @@
 #include <iostream>
 #include <string>
 #include <thread>
+#include <atomic>
 #include "httplib.h"
 #include "concurrent_queue.hpp"
 
+// Global metric counters for Prometheus
+std::atomic<uint64_t> messages_received_total{0};
+
 int main() {
-    // Max capacity of 10,000 items
     ConcurrentQueue<std::string> metrics_queue(10000);
-    
-    // cpp-httplib Server inherently uses a thread pool to handle concurrent requests
     httplib::Server svr;
 
+    // POST /metrics: Receives data from Telemetry Agents
     svr.Post("/metrics", [&metrics_queue](const httplib::Request& req, httplib::Response& res) {
-        // Enqueue the received batched metrics
+        messages_received_total.fetch_add(1, std::memory_order_relaxed);
         metrics_queue.push(req.body);
-        
-        // Print the received metrics to stdout to verify ingestion
-        std::cout << "[Broker] Received metrics block:\n" << req.body << std::endl;
-        std::cout << "[Broker] Queue size: " << metrics_queue.size() << "\n" << std::endl;
-        
         res.set_content("Metrics accepted", "text/plain");
+    });
+
+    // GET /metrics: Prometheus scraper endpoint returning Exposition Format
+    svr.Get("/metrics", [&metrics_queue](const httplib::Request& req, httplib::Response& res) {
+        std::string prom_metrics = 
+            "# HELP messages_received_total Total telemetry batches received\n"
+            "# TYPE messages_received_total counter\n"
+            "messages_received_total " + std::to_string(messages_received_total.load()) + "\n"
+            "# HELP queue_size Current size of the concurrent queue\n"
+            "# TYPE queue_size gauge\n"
+            "queue_size " + std::to_string(metrics_queue.size()) + "\n"
+            "# HELP messages_dropped_total Total telemetry batches dropped due to backpressure\n"
+            "# TYPE messages_dropped_total counter\n"
+            "messages_dropped_total " + std::to_string(metrics_queue.dropped_count()) + "\n";
+        
+        res.set_content(prom_metrics, "text/plain");
     });
 
     // Create a consumer thread to forward metrics to the Python ML Processor
@@ -55,7 +68,7 @@ int main() {
         }
     });
 
-    std::cout << "Starting Central Ingestion Broker on port 8080..." << std::endl;
+    std::cout << "Starting Central Ingestion Broker on port 8080 (Prometheus at GET /metrics)..." << std::endl;
     if (!svr.listen("0.0.0.0", 8080)) {
         std::cerr << "Failed to start server. Port 8080 might be in use." << std::endl;
         return 1;
