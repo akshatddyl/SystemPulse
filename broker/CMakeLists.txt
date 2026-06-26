@@ -4,6 +4,8 @@ project(TelemetryBroker)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(Threads REQUIRED)
+
 # Fetch cpp-httplib directly to avoid manual dependency management
 include(FetchContent)
 FetchContent_Declare(
