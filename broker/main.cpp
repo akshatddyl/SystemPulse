@@ -22,15 +22,35 @@ int main() {
         res.set_content("Metrics accepted", "text/plain");
     });
 
-    // Create a consumer thread to simulate ML processing or forwarding
+    // Create a consumer thread to forward metrics to the Python ML Processor
     std::thread consumer_thread([&metrics_queue]() {
+        const char* ml_url_env = std::getenv("ML_PROCESSOR_URL");
+        std::string ml_url = ml_url_env ? ml_url_env : "http://localhost:5000";
+        
+        std::string host = "localhost";
+        int port = 5000;
+        if (ml_url.find("http://") == 0) {
+            auto colon_pos = ml_url.find(':', 7);
+            if (colon_pos != std::string::npos) {
+                host = ml_url.substr(7, colon_pos - 7);
+                port = std::stoi(ml_url.substr(colon_pos + 1));
+            } else {
+                host = ml_url.substr(7);
+                port = 80;
+            }
+        }
+        
+        httplib::Client cli(host, port);
+        cli.set_connection_timeout(2);
+        cli.set_read_timeout(2);
+
         while (true) {
             auto item = metrics_queue.pop();
             if (item) {
-                // Here we would forward the data to the Python ML Processor.
-                // For now, we just dequeue it so the queue doesn't fill up infinitely.
-                // If the ML processor is slower than ingestion, the drop-oldest mechanism 
-                // in concurrent_queue.hpp will protect us.
+                auto res = cli.Post("/analyze", *item, "application/json");
+                if (!res || res->status != 200) {
+                    std::cerr << "[Broker] Failed to forward to ML Processor at " << host << ":" << port << std::endl;
+                }
             }
         }
     });

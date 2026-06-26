@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  ml-processor:
+    build: ./ml-processor
+    ports:
+      - "5000:5000"
+    networks:
+      - telemetry-net
+
+  broker:
+    build: ./broker
+    ports:
+      - "8080:8080"
+    environment:
+      - ML_PROCESSOR_URL=http://ml-processor:5000
+    depends_on:
+      - ml-processor
+    networks:
+      - telemetry-net
+
+  agent-1:
+    build: ./agent
+    environment:
+      - BROKER_URL=http://broker:8080
+    depends_on:
+      - broker
+    networks:
+      - telemetry-net
+
+  agent-2:
+    build: ./agent
+    environment:
+      - BROKER_URL=http://broker:8080
+    depends_on:
+      - broker
+    networks:
+      - telemetry-net
+
+  agent-3:
+    build: ./agent
+    environment:
+      - BROKER_URL=http://broker:8080
+    depends_on:
+      - broker
+    networks:
+      - telemetry-net
+
+networks:
+  telemetry-net:
+    driver: bridge

@@ -40,11 +40,10 @@ def check_anomaly(metric_name: str, value: float, history: deque):
         
     z_score = (value - mean) / std
     
-    # Push the new value into the rolling window
     history.append(value)
     
-    is_anomaly = abs(z_score) > Z_SCORE_THRESHOLD
-    return is_anomaly, z_score
+    is_anomaly = bool(abs(z_score) > Z_SCORE_THRESHOLD)
+    return is_anomaly, float(z_score)
 
 @app.post("/analyze")
 async def analyze_metrics(request: Request):
