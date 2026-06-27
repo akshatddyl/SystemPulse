@@ -22,15 +22,18 @@ int main() {
     // GET /metrics: Prometheus scraper endpoint returning Exposition Format
     svr.Get("/metrics", [&metrics_queue](const httplib::Request& req, httplib::Response& res) {
         std::string prom_metrics = 
-            "# HELP messages_received_total Total telemetry batches received\n"
-            "# TYPE messages_received_total counter\n"
-            "messages_received_total " + std::to_string(messages_received_total.load()) + "\n"
-            "# HELP queue_size Current size of the concurrent queue\n"
-            "# TYPE queue_size gauge\n"
-            "queue_size " + std::to_string(metrics_queue.size()) + "\n"
-            "# HELP messages_dropped_total Total telemetry batches dropped due to backpressure\n"
-            "# TYPE messages_dropped_total counter\n"
-            "messages_dropped_total " + std::to_string(metrics_queue.dropped_count()) + "\n";
+            "# HELP broker_messages_received_total Total telemetry batches received\n"
+            "# TYPE broker_messages_received_total counter\n"
+            "broker_messages_received_total " + std::to_string(messages_received_total.load()) + "\n"
+            "# HELP broker_queue_size Current size of the concurrent queue\n"
+            "# TYPE broker_queue_size gauge\n"
+            "broker_queue_size " + std::to_string(metrics_queue.size()) + "\n"
+            "# HELP broker_queue_capacity Max capacity of the concurrent queue\n"
+            "# TYPE broker_queue_capacity gauge\n"
+            "broker_queue_capacity 10000\n"
+            "# HELP broker_messages_dropped_total Total telemetry batches dropped due to backpressure\n"
+            "# TYPE broker_messages_dropped_total counter\n"
+            "broker_messages_dropped_total " + std::to_string(metrics_queue.dropped_count()) + "\n";
         
         res.set_content(prom_metrics, "text/plain");
     });
