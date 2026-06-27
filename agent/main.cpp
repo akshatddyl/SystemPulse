@@ -9,8 +9,8 @@
 #include "ring_buffer.hpp"
 
 // Simple JSON builder for the batched metrics
-std::string to_json(const SystemMetrics& m) {
-    return "{\"cpu_usage_percent\":" + std::to_string(m.cpu_usage_percent) + 
+std::string to_json(const SystemMetrics& m, const std::string& agent_id) {
+    return "{\"agent_id\":\"" + agent_id + "\",\"cpu_usage_percent\":" + std::to_string(m.cpu_usage_percent) + 
            ",\"mem_usage_percent\":" + std::to_string(m.mem_usage_percent) + 
            ",\"timestamp_ms\":" + std::to_string(m.timestamp_ms) + "}";
 }
@@ -18,6 +18,10 @@ std::string to_json(const SystemMetrics& m) {
 int main() {
     const char* broker_url_env = std::getenv("BROKER_URL");
     std::string broker_url = broker_url_env ? broker_url_env : "http://localhost:8080";
+    
+    // Grab the container hostname to uniquely identify this agent in Prometheus/Grafana
+    const char* hostname_env = std::getenv("HOSTNAME");
+    std::string agent_id = hostname_env ? hostname_env : "agent-unknown";
     
     // Parse host and port for cpp-httplib
     std::string host = "localhost";
@@ -46,7 +50,7 @@ int main() {
     });
 
     // Thread 2: Consumer (Network) Thread
-    std::thread consumer([&buffer, host, port]() {
+    std::thread consumer([&buffer, host, port, agent_id]() {
         httplib::Client cli(host, port);
         cli.set_connection_timeout(2);
         cli.set_read_timeout(2);
@@ -62,7 +66,7 @@ int main() {
                 // Build JSON array manually to avoid extra dependencies
                 std::string payload = "[";
                 for (size_t i = 0; i < batch.size(); ++i) {
-                    payload += to_json(batch[i]);
+                    payload += to_json(batch[i], agent_id);
                     if (i < batch.size() - 1) payload += ",";
                 }
                 payload += "]";
@@ -83,7 +87,7 @@ int main() {
         }
     });
 
-    std::cout << "Telemetry Agent started. Targeting Broker: " << broker_url << std::endl;
+    std::cout << "Telemetry Agent [" << agent_id << "] started. Targeting Broker: " << broker_url << std::endl;
 
     producer.join();
     consumer.join();

@@ -1,21 +1,45 @@
 build/
 bin/
 out/
-
 *.o
 *.a
 *.so
-
+*.out
 compile_commands.json
 
-.vscode/
-
-.idea/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
 
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
 
-*.pyc
+# Virtual Environments
+venv/
+env/
+.venv/
+.env/
 
 .env
+.env.*
+*.local
 
 *.log
+*.sqlite3
+
+# To Ignore local Prometheus/Grafana volume mounts
+grafana/data/
+prometheus/data/
+
+# 5. IDEs and OS Junk
+.vscode/
+.idea/
+.vs/
+*.swp
+*.swo
+# macOS and Windows clutter
+.DS_Store
+Thumbs.db
