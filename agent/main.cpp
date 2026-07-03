@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <cstdlib>
+#include <unistd.h> // Added for POSIX gethostname
 #include "httplib.h"
 #include "metrics_collector.hpp"
 #include "ring_buffer.hpp"
@@ -19,9 +20,18 @@ int main() {
     const char* broker_url_env = std::getenv("BROKER_URL");
     std::string broker_url = broker_url_env ? broker_url_env : "http://localhost:8080";
     
-    // Grab the container hostname to uniquely identify this agent in Prometheus/Grafana
-    const char* hostname_env = std::getenv("HOSTNAME");
-    std::string agent_id = hostname_env ? hostname_env : "agent-unknown";
+    char hostname[256];
+    if (gethostname(hostname, sizeof(hostname)) != 0) {
+        snprintf(hostname, sizeof(hostname), "agent-unknown");
+    }
+    std::string agent_id(hostname);
+
+    // Fetch dynamic intervals from environment variables (with fallbacks)
+    const char* sample_env = std::getenv("SAMPLE_INTERVAL_MS");
+    int sample_interval = sample_env ? std::stoi(sample_env) : 500;
+
+    const char* batch_env = std::getenv("BATCH_INTERVAL_MS");
+    int batch_interval = batch_env ? std::stoi(batch_env) : 1000;
     
     // Parse host and port for cpp-httplib
     std::string host = "localhost";
@@ -41,16 +51,16 @@ int main() {
     MetricsCollector collector;
 
     // Thread 1: Producer Thread
-    std::thread producer([&buffer, &collector]() {
+    std::thread producer([&buffer, &collector, sample_interval]() {
         while (true) {
             SystemMetrics m = collector.collect();
             buffer.push(m);
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            std::this_thread::sleep_for(std::chrono::milliseconds(sample_interval)); // Dynamically scaled
         }
     });
 
     // Thread 2: Consumer (Network) Thread
-    std::thread consumer([&buffer, host, port, agent_id]() {
+    std::thread consumer([&buffer, host, port, agent_id, batch_interval]() {
         httplib::Client cli(host, port);
         cli.set_connection_timeout(2);
         cli.set_read_timeout(2);
@@ -83,11 +93,12 @@ int main() {
                 }
             }
             // Wait before batching and sending the next chunk
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            std::this_thread::sleep_for(std::chrono::milliseconds(batch_interval)); // Dynamically scaled
         }
     });
 
     std::cout << "Telemetry Agent [" << agent_id << "] started. Targeting Broker: " << broker_url << std::endl;
+    std::cout << "Config: Sample Interval = " << sample_interval << "ms, Batch Interval = " << batch_interval << "ms" << std::endl;
 
     producer.join();
     consumer.join();

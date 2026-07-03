@@ -35,33 +35,18 @@ services:
       - "8080:8080"
     environment:
       - ML_PROCESSOR_URL=http://ml-processor:5000
+      - QUEUE_CAPACITY=10000 # Extracted from hardcode
     depends_on:
       - ml-processor
     networks:
       - telemetry-net
 
-  agent-1:
+  agent:
     build: ./agent
     environment:
       - BROKER_URL=http://broker:8080
-    depends_on:
-      - broker
-    networks:
-      - telemetry-net
-
-  agent-2:
-    build: ./agent
-    environment:
-      - BROKER_URL=http://broker:8080
-    depends_on:
-      - broker
-    networks:
-      - telemetry-net
-
-  agent-3:
-    build: ./agent
-    environment:
-      - BROKER_URL=http://broker:8080
+      - SAMPLE_INTERVAL_MS=500 # Extracted from hardcode
+      - BATCH_INTERVAL_MS=1000 # Extracted from hardcode
     depends_on:
       - broker
     networks:
