@@ -6,13 +6,12 @@
 
 *A distributed, lock-free, self-healing observability system — built in modern C++ and Python.*
 
-[![C++](https://img.shields.io/badge/C%2B%2B-20-00599C?style=for-the-badge&logo=cplusplus&logoColor=white)](#)
+[![C++](https://img.shields.io/badge/C%2B%2B-17-00599C?style=for-the-badge&logo=cplusplus&logoColor=white)](#)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](#)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](#)
 [![FastAPI](https://img.shields.io/badge/FastAPI-ML%20Service-009688?style=for-the-badge&logo=fastapi&logoColor=white)](#)
 [![Prometheus](https://img.shields.io/badge/Prometheus-Metrics-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)](#)
 [![Grafana](https://img.shields.io/badge/Grafana-Dashboards-F46800?style=for-the-badge&logo=grafana&logoColor=white)](#)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](#)
 
 </div>
 
@@ -70,7 +69,7 @@ SystemPulse was built to investigate several engineering problems commonly encou
 ## ✨ Key Features
 
 - 🔩 **Custom Lock-Free Ring Buffer** — atomic producer-consumer communication inside each agent for near-zero CPU overhead.
-- 🌐 **Horizontally Scalable by Design** — agents self-assign identity via `gethostname()`; scale from 1 to 100+ replicas with one command.
+- 🌐 **Horizontally Scalable by Design** — agents self-assign identity via `gethostname()`; scale from 1 to N (any postive number based on the resources available) replicas with one command.
 - 🧵 **Zero Busy-Waiting** — the broker's queue blocks on a `condition_variable`, idling at 0.0% CPU instead of spinning.
 - 🛡️ **Backpressure-Aware** — a strict drop-oldest policy at 10,000 items protects the broker from OOM crashes during downstream congestion.
 - 📈 **Online Anomaly Detection** — per-host rolling Z-score scoring with warm-up periods, epsilon safeguards, and absolute-threshold fallbacks.
@@ -275,10 +274,10 @@ Measured during a local stress test with 100 concurrently Dockerized agents(serv
 | Metric | Result |
 |---|---|
 | Concurrent Agents | 100 Dockerized agents |
-| Sustained Throughput | ~6,000 metrics/min (99.8 batches/sec) |
-| Per-Agent CPU Footprint | ~0.7% CPU |
-| Per-Agent Memory Footprint | ~1.7 MB RAM |
-| Backpressure Resilience | 7,231 packets safely dropped during a simulated network outage — broker memory stayed capped, zero OOM crashes |
+| Sustained Throughput | ~1,000 metrics/second |
+| Per-Agent CPU Footprint | <0.15% CPU |
+| Per-Agent Memory Footprint | <5 MB RAM |
+| Backpressure Resilience | 7,231+ packets safely dropped during a simulated network outage — broker memory stayed capped, zero OOM crashes |
 | Broker Idle CPU | 0.0% (condition-variable blocking, zero busy-wait) |
 
 ---
