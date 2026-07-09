@@ -319,7 +319,7 @@ This isn't a synthetic unit test with mocked inputs — it's a real container, u
 
 | Layer | Technology | Purpose |
 |---|---|---|
-| Agent & Broker | C++20 | Low-level, high-performance metric collection & ingestion |
+| Agent & Broker | C++17 | Low-level, high-performance metric collection & ingestion |
 | Networking | `cpp-httplib` | Lightweight embedded HTTP server/client for the C++ services |
 | Concurrency | `std::mutex`, `std::condition_variable`, atomics | Thread-safe concurrency without busy-waiting |
 | Testing | GoogleTest (`gtest`) | C++ unit testing |
@@ -337,7 +337,7 @@ This isn't a synthetic unit test with mocked inputs — it's a real container, u
 
 ### Prerequisites
 - Docker & Docker Compose (v2+)
-- *(Optional, for local dev outside containers)* CMake, a C++17/20-compliant compiler, Python 3.10+
+- *(Optional, for local dev outside containers)* CMake, a C++17-compliant compiler, Python 3.10+
 
 ### Clone & Run
 ```bash
